@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const logDir = path.join(__dirname, '..', '..', 'logs');
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
 
 function auditLog(req, res, next) {
   const originalJson = res.json.bind(res);
