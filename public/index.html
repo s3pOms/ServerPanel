@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#6750A4">
+  <meta name="color-scheme" content="light">
+  <title id="page-title-tag">ServerPanel - 服务器管理面板</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="preload">
+  <div id="app">
+    <div id="login-page" class="login-page" style="display:none">
+      <div class="login-container">
+          <div class="login-header">
+            <div class="login-logo"><i class="fas fa-server" id="login-logo-icon"></i></div>
+            <h1 id="login-panel-name">ServerPanel</h1>
+            <p>服务器管理面板</p>
+          </div>
+        <form id="login-form" class="login-form" onsubmit="return false">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> 用户名</label>
+            <input type="text" id="login-username" placeholder="请输入用户名" value="" required>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-lock"></i> 密码</label>
+            <input type="password" id="login-password" placeholder="请输入密码" value="" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" onclick="handleLogin()">
+            <i class="fas fa-sign-in-alt"></i> 登 录
+          </button>
+          <div id="login-error" class="login-error"></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="main-app" style="display:none">
+      <!-- App Bar (mobile) -->
+      <div class="app-bar" id="app-bar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <span class="app-bar-title" id="app-bar-title">仪表盘</span>
+        <span id="header-time-mobile" class="header-time"></span>
+      </div>
+
+      <!-- Sidebar (desktop) -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-logo"><i class="fas fa-server" id="sidebar-logo-icon"></i> <span id="sidebar-logo-text">ServerPanel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+          <a class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+            <i class="fas fa-tachometer-alt"></i><span>仪表盘</span>
+          </a>
+          <a class="nav-item" data-page="files" onclick="switchPage('files')">
+            <i class="fas fa-folder"></i><span>文件管理</span>
+          </a>
+          <a class="nav-item" data-page="terminal" onclick="switchPage('terminal')">
+            <i class="fas fa-terminal"></i><span>SSH终端</span>
+          </a>
+          <a class="nav-item" data-page="docker" onclick="switchPage('docker')">
+            <i class="fab fa-docker"></i><span>Docker</span>
+          </a>
+          <a class="nav-item" data-page="nginx" onclick="switchPage('nginx')">
+            <i class="fas fa-globe"></i><span>Nginx</span>
+          </a>
+          <div class="sidebar-group">
+            <a class="nav-item sidebar-group-toggle" onclick="toggleSidebarGroup(this)" data-group="plugins">
+              <i class="fas fa-puzzle-piece"></i><span>模块</span>
+              <i class="fas fa-chevron-down sidebar-group-arrow"></i>
+            </a>
+            <div class="sidebar-subnav">
+              <a class="nav-item sidebar-subitem" data-page="plugin-page" onclick="switchPage('plugin-page')">
+                <i class="fas fa-th-large"></i><span>模块页面</span>
+              </a>
+              <a class="nav-item sidebar-subitem" data-page="plugin-manager" onclick="switchPage('plugin-manager')">
+                <i class="fas fa-cubes"></i><span>管理模块</span>
+              </a>
+            </div>
+          </div>
+          <a class="nav-item" data-page="users" onclick="switchPage('users')">
+            <i class="fas fa-users"></i><span>用户管理</span>
+          </a>
+          <a class="nav-item" data-page="logs" onclick="switchPage('logs')">
+            <i class="fas fa-history"></i><span>操作日志</span>
+          </a>
+          <a class="nav-item" data-page="settings" onclick="switchPage('settings')">
+            <i class="fas fa-cog"></i><span>系统设置</span>
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="user-info">
+<!--            <i class="fas fa-user-circle"></i>-->
+            <span id="sidebar-username"></span>
+          </div>
+          <button class="btn btn-icon btn-sm btn-logout" onclick="handleLogout()" title="退出登录">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+          <button class="btn btn-icon btn-sm btn-logout btn-collapse" onclick="toggleCollapse()" title="折叠侧栏">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+        </div>
+      </aside>
+      <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+      <main id="main-content" class="main-content">
+        <header id="page-header" class="page-header">
+          <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+          <h2 id="page-title">仪表盘</h2>
+          <div class="header-actions">
+            <span id="header-time" class="header-time"></span>
+          </div>
+        </header>
+        <div id="page-content" class="page-content"></div>
+      </main>
+
+      <!-- Bottom Navigation (mobile) -->
+      <nav class="bottom-nav" id="bottom-nav">
+        <div class="bottom-nav-inner">
+          <button class="nav-bottom-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+            <i class="fas fa-tachometer-alt"></i><span>仪表盘</span>
+          </button>
+          <button class="nav-bottom-item" data-page="files" onclick="switchPage('files')">
+            <i class="fas fa-folder"></i><span>文件</span>
+          </button>
+          <button class="nav-bottom-item" data-page="terminal" onclick="switchPage('terminal')">
+            <i class="fas fa-terminal"></i><span>终端</span>
+          </button>
+          <button class="nav-bottom-item" data-page="docker" onclick="switchPage('docker')">
+            <i class="fab fa-docker"></i><span>Docker</span>
+          </button>
+          <button class="nav-bottom-item" data-page="nginx" onclick="switchPage('nginx')">
+            <i class="fas fa-globe"></i><span>Nginx</span>
+          </button>
+          <button class="nav-bottom-item" data-page="settings" onclick="switchPage('settings')">
+            <i class="fas fa-cog"></i><span>设置</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay" style="display:none">
+      <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+    </div>
+  </div>
+
+  <div id="context-menu" class="context-menu" style="display:none"></div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/pages/dashboard.js"></script>
+  <script src="/js/pages/files.js"></script>
+  <script src="/js/pages/terminal.js"></script>
+  <script src="/js/pages/docker.js"></script>
+  <script src="/js/pages/nginx.js"></script>
+  <script src="/js/pages/plugin-page.js"></script>
+  <script src="/js/pages/plugin-manager.js"></script>
+  <script src="/js/pages/users.js"></script>
+  <script src="/js/pages/logs.js"></script>
+  <script src="/js/pages/settings.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', initApp);</script>
+</body>
+</html>

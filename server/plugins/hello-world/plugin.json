@@ -1,0 +1,11 @@
+{
+  "name": "hello-world",
+  "version": "1.0.0",
+  "title": "Hello World",
+  "description": "一个示例模块，展示 ServerPanel 模块 ADK 的基本用法",
+  "author": "ServerPanel",
+  "icon": "fa-solid fa-smile",
+  "entry": "index.html",
+  "scripts": ["server.py"],
+  "permissions": []
+}

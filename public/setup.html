@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初始化 - ServerPanel</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body { margin: 0; min-height: 100vh; background: linear-gradient(135deg, #02e2ff 0%, #4A3A8A 100%); display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif; padding: 20px; }
+.setup-card { background: rgba(255,251,255,0.95); backdrop-filter: blur(16px); border-radius: 24px; padding: 40px; max-width: 480px; width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.setup-card .logo { text-align: center; margin-bottom: 28px; }
+.setup-card .logo i { font-size: 48px; color: #1302ff; background: rgba(103,80,164,0.12); width: 80px; height: 80px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; }
+.setup-card .logo h1 { font-size: 24px; font-weight: 500; margin: 12px 0 4px; color: #1C1B1F; }
+.setup-card .logo p { font-size: 14px; color: #7F7F7F; margin: 0; }
+.setup-step { display: none; }
+.setup-step.active { display: block; }
+.step-indicator { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; background: #CAC4D0; transition: 0.3s; }
+.step-dot.active { background: #02e2ff; width: 28px; border-radius: 5px; }
+.step-dot.done { background: #31A062; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 500; color: #49454F; margin-bottom: 6px; }
+.form-group label i { width: 16px; margin-right: 4px; color: #02e2ff; }
+.form-group input { width: 100%; padding: 12px 16px; border: 1px solid #CAC4D0; border-radius: 12px; font-size: 14px; font-family: inherit; background: white; box-sizing: border-box; outline: none; transition: border-color 0.2s; }
+.form-group input:focus { border-color: #02e2ff; }
+.form-group .hint { font-size: 12px; color: #7F7F7F; margin-top: 4px; }
+.setup-btn { width: 100%; padding: 14px; background: #02e2ff; color: white; border: none; border-radius: 50px; font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s; margin-top: 8px; }
+.setup-btn:hover { opacity: 0.9; }
+.setup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.setup-btn .spinner { display: none; }
+.setup-btn.loading .spinner { display: inline-block; }
+.setup-btn.loading .btn-text { display: none; }
+.setup-error { color: #E53935; font-size: 13px; margin-top: 8px; min-height: 20px; }
+.setup-success { text-align: center; padding: 40px 0; }
+.setup-success i { font-size: 64px; color: #31A062; margin-bottom: 16px; }
+.setup-success h2 { font-weight: 500; margin: 0 0 8px; }
+.setup-success p { color: #7F7F7F; margin: 0; }
+.skip-link { display: block; text-align: center; margin-top: 12px; font-size: 13px; color: #7F7F7F; cursor: pointer; text-decoration: underline; }
+.hidden { display: none; }
+.password-strength { height: 4px; border-radius: 2px; margin-top: 6px; background: #E6E1E5; overflow: hidden; }
+.password-strength div { height: 100%; width: 0; border-radius: 2px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+<div class="setup-card" id="setup-card">
+  <div class="logo">
+    <i class="fas fa-server"></i>
+    <h1>ServerPanel</h1>
+    <p>首次使用，请完成初始化设置</p>
+  </div>
+
+  <div class="step-indicator" id="step-indicator">
+    <div class="step-dot active" data-step="1"></div>
+    <div class="step-dot" data-step="2"></div>
+    <div class="step-dot" data-step="3"></div>
+  </div>
+
+  <!-- Step 1: Admin Account -->
+  <div class="setup-step active" data-step="1">
+    <div class="form-group">
+      <label><i class="fas fa-user"></i> 管理员用户名</label>
+      <input type="text" id="setup-username" value="admin" placeholder="输入管理员用户名">
+    </div>
+    <div class="form-group">
+      <label><i class="fas fa-lock"></i> 管理员密码</label>
+      <input type="password" id="setup-password" placeholder="至少4位密码" oninput="updatePasswordStrength()">
+      <div class="password-strength"><div id="setup-pw-strength"></div></div>
+    </div>
+    <div class="form-group">
+      <label><i class="fas fa-check"></i> 确认密码</label>
+      <input type="password" id="setup-password-confirm" placeholder="再次输入密码">
+    </div>
+    <button class="setup-btn" onclick="nextStep(2)"><span class="btn-text">下一步 <i class="fas fa-arrow-right"></i></span><span class="spinner"><i class="fas fa-spinner fa-spin"></i></span></button>
+    <div id="setup-error-1" class="setup-error"></div>
+  </div>
+
+  <!-- Step 2: Database Password (Optional) -->
+  <div class="setup-step" data-step="2">
+    <div class="form-group">
+      <label><i class="fas fa-database"></i> 数据库密码</label>
+      <input type="password" id="setup-db-password" placeholder="留空则不设置">
+      <div class="hint"><i class="fas fa-info-circle"></i> 用于加密会话密钥等敏感数据。设置后请妥善保管，丢失将无法解密已加密数据。</div>
+    </div>
+    <div class="form-group">
+      <label><i class="fas fa-check"></i> 确认数据库密码</label>
+      <input type="password" id="setup-db-password-confirm" placeholder="再次输入数据库密码">
+    </div>
+    <button class="setup-btn" onclick="nextStep(3)"><span class="btn-text">下一步 <i class="fas fa-arrow-right"></i></span><span class="spinner"><i class="fas fa-spinner fa-spin"></i></span></button>
+    <button class="skip-link" onclick="skipDbPassword()">跳过，不设置数据库密码</button>
+    <div id="setup-error-2" class="setup-error"></div>
+  </div>
+
+  <!-- Step 3: Confirm -->
+  <div class="setup-step" data-step="3">
+    <div style="margin-bottom:16px">
+      <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;background:#F5EFF7;border-radius:12px;margin-bottom:12px">
+        <i class="fas fa-user-shield" style="font-size:20px;color:#02e2ff"></i>
+        <div><div style="font-weight:500;font-size:14px" id="confirm-username">admin</div><div style="font-size:12px;color:#7F7F7F">管理员账号</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;background:#F5EFF7;border-radius:12px">
+        <i class="fas fa-database" style="font-size:20px;color:#02e2ff"></i>
+        <div><div style="font-weight:500;font-size:14px" id="confirm-db-status">未设置</div><div style="font-size:12px;color:#7F7F7F">数据库密码</div></div>
+      </div>
+    </div>
+    <button class="setup-btn" onclick="submitSetup()"><span class="btn-text"><i class="fas fa-check"></i> 完成初始化</span><span class="spinner"><i class="fas fa-spinner fa-spin"></i> 初始化中...</span></button>
+    <button class="skip-link" onclick="prevStep(2)">返回修改</button>
+    <div id="setup-error-3" class="setup-error"></div>
+  </div>
+
+  <!-- Success -->
+  <div class="setup-step" data-step="4">
+    <div class="setup-success">
+      <i class="fas fa-check-circle"></i>
+      <h2>初始化完成</h2>
+      <p>正在跳转到登录页面...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let _setupData = {};
+
+function updatePasswordStrength() {
+  const pw = document.getElementById('setup-password').value;
+  const bar = document.getElementById('setup-pw-strength');
+  let score = 0;
+  if (pw.length >= 4) score = 25;
+  if (pw.length >= 8) score = 50;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score += 20;
+  if (/\d/.test(pw)) score += 15;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 15;
+  score = Math.min(100, score);
+  bar.style.width = score + '%';
+  bar.style.background = score < 40 ? '#E53935' : score < 70 ? '#FF9800' : '#31A062';
+}
+
+function showError(step, msg) {
+  document.getElementById('setup-error-' + step).textContent = msg;
+}
+
+function clearError(step) {
+  document.getElementById('setup-error-' + step).textContent = '';
+}
+
+function setStep(n) {
+  document.querySelectorAll('.setup-step').forEach(el => el.classList.remove('active'));
+  document.querySelector('.setup-step[data-step="' + n + '"]').classList.add('active');
+  document.querySelectorAll('.step-dot').forEach(el => el.classList.toggle('active', parseInt(el.dataset.step) === n));
+  document.querySelectorAll('.step-dot').forEach(el => el.classList.toggle('done', parseInt(el.dataset.step) < n));
+}
+
+function nextStep(n) {
+  clearError(n - 1);
+  if (n === 2) {
+    const username = document.getElementById('setup-username').value.trim();
+    const password = document.getElementById('setup-password').value;
+    const confirm = document.getElementById('setup-password-confirm').value;
+    if (!username) { showError(1, '请输入用户名'); return; }
+    if (password.length < 4) { showError(1, '密码至少4位'); return; }
+    if (password !== confirm) { showError(1, '两次密码不一致'); return; }
+    _setupData.username = username;
+    _setupData.password = password;
+  } else if (n === 3) {
+    const dbPw = document.getElementById('setup-db-password').value;
+    const dbConfirm = document.getElementById('setup-db-password-confirm').value;
+    if (dbPw !== dbConfirm) { showError(2, '两次数据库密码不一致'); return; }
+    _setupData.dbPassword = dbPw || '';
+    // Update confirm screen
+    document.getElementById('confirm-username').textContent = _setupData.username;
+    document.getElementById('confirm-db-status').textContent = _setupData.dbPassword ? '已设置' : '未设置';
+  }
+  setStep(n);
+}
+
+function prevStep(n) {
+  setStep(n);
+}
+
+function skipDbPassword() {
+  document.getElementById('setup-db-password').value = '';
+  document.getElementById('setup-db-password-confirm').value = '';
+  _setupData.dbPassword = '';
+  nextStep(3);
+}
+
+async function submitSetup() {
+  clearError(3);
+  const btn = document.querySelector('.setup-step[data-step="3"] .setup-btn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  try {
+    const res = await fetch('/api/auth/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_setupData)
+    });
+    const data = await res.json();
+    if (data.success) {
+      setStep(4);
+      setTimeout(() => { window.location.href = '/'; }, 2000);
+    } else {
+      showError(3, data.error || '初始化失败');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  } catch (e) {
+    showError(3, '网络错误: ' + e.message);
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hello World</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; background: transparent; color: #1C1B1F; padding: 24px; }
+.container { max-width: 600px; margin: 0 auto; }
+h1 { font-size: 24px; font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+.card { background: #F5EFF7; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.card h3 { font-size: 16px; font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.msg-box { background: white; border-radius: 12px; padding: 16px; margin-top: 12px; font-size: 14px; }
+.msg-box .label { font-size: 12px; color: #999; margin-bottom: 4px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 50px; font-size: 14px; font-weight: 500; cursor: pointer; background: #6750A4; color: white; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.9; }
+.btn:active { opacity: 0.8; }
+input, textarea { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+textarea { min-height: 80px; resize: vertical; }
+.loading { opacity: 0.5; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1><i class="fas fa-smile" style="color:#6750A4"></i> Hello World</h1>
+  <p>这是一个示例模块，展示了 ServerPanel 模块 ADK 的基本功能。</p>
+
+  <div class="card">
+    <h3><i class="fas fa-info-circle" style="color:#6750A4"></i> 模块信息</h3>
+    <div style="font-size:14px;line-height:1.8">
+      <div><strong>名称：</strong> Hello World</div>
+      <div><strong>版本：</strong> 1.0.0</div>
+      <div><strong>作者：</strong> ServerPanel</div>
+      <div><strong>目录：</strong> server/plugins/hello-world/</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><i class="fas fa-database" style="color:#6750A4"></i> 配置测试</h3>
+    <p style="font-size:13px;margin-bottom:12px">读取并显示模块的 config.json 配置</p>
+    <button class="btn" onclick="loadConfig()"><i class="fas fa-sync-alt"></i> 读取配置</button>
+    <div id="cfg-result" class="msg-box" style="display:none">
+      <div class="label">配置内容</div>
+      <pre id="cfg-content" style="font-size:13px;white-space:pre-wrap;word-break:break-all;background:#f5f5f5;padding:8px;border-radius:8px;margin-top:4px"></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><i class="fab fa-python" style="color:#6750A4"></i> Python 后端</h3>
+    <p style="font-size:13px;margin-bottom:12px">调用 Python 后端 (server.py) 执行操作</p>
+    <input type="text" id="py-input" placeholder="输入你的名字..." value="ServerPanel">
+    <button class="btn" onclick="callPython()"><i class="fab fa-python"></i> 发送</button>
+    <div id="py-result" class="msg-box" style="display:none">
+      <div class="label">Python 回复</div>
+      <pre id="py-content" style="font-size:13px;white-space:pre-wrap;word-break:break-all;background:#f5f5f5;padding:8px;border-radius:8px;margin-top:4px"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+// Use parent's apiRequest if available, otherwise fallback to fetch
+const api = (window.parent && window.parent.apiRequest) 
+  ? window.parent.apiRequest 
+  : async (method, path, body) => {
+      const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch('/api' + path, opts);
+      return res.json();
+    };
+
+async function loadConfig() {
+  const btn = event.target;
+  btn.classList.add('loading');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
+  const res = await api('GET', '/plugins/hello-world/config');
+  btn.innerHTML = '<i class="fas fa-sync-alt"></i> 读取配置';
+  btn.classList.remove('loading');
+  const box = document.getElementById('cfg-result');
+  const content = document.getElementById('cfg-content');
+  box.style.display = 'block';
+  if (res && res.success) {
+    content.textContent = JSON.stringify(res.config || {}, null, 2);
+  } else {
+    content.textContent = '读取失败: ' + (res?.error || '未知错误');
+  }
+}
+
+async function callPython() {
+  const name = document.getElementById('py-input').value.trim() || 'World';
+  const btn = event.target;
+  btn.classList.add('loading');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 请求中...';
+  const res = await api('POST', '/plugins/hello-world/execute', { args: { name, action: 'greet' } });
+  btn.innerHTML = '<i class="fab fa-python"></i> 发送';
+  btn.classList.remove('loading');
+  const box = document.getElementById('py-result');
+  const content = document.getElementById('py-content');
+  box.style.display = 'block';
+  if (res && res.success) {
+    content.textContent = JSON.stringify(res.result || res.output || {}, null, 2);
+  } else {
+    content.textContent = '执行失败: ' + (res?.error || '无输出');
+  }
+}
+</script>
+</body>
+</html>
